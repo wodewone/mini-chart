@@ -20,6 +20,7 @@
             // 登录
             wx.login({
                 success: res => {
+                    console.info('wx.login: ', res);
                     // 发送 res.code 到后台换取 openId, sessionKey, unionId
                 }
             });
@@ -96,6 +97,7 @@
             "weui": true
         }
     }
+
 </script>
 
 <!--也可以通过以下形式用js输出json，便于书写注释和使用条件编译-->

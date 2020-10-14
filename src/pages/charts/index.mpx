@@ -27,10 +27,13 @@
     import numeral from 'numeral';
     import {http} from '@/lib/api.rest'
     import {createPage} from '@mpxjs/core';
+    // import ScrollBar from '@antv/f2/lib/plugin/scroll-bar';
+    // import pan from '@antv/f2/lib/interaction/pan';
 
     createPage({
         data: {
             initChart(F2, config) {
+                // F2.Chart.plugins.register(ScrollBar);
                 return new F2.Chart(config);
             },
             loading: false,
