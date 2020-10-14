@@ -57,4 +57,5 @@ module.exports = {
   //     }
   //   }
   // }
+    externals: ['weui']
 }

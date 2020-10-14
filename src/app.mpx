@@ -1,29 +1,104 @@
 <script>
-  import mpx, { createApp } from '@mpxjs/core'
-  import apiProxy from '@mpxjs/api-proxy'
+    import mpx, {createApp} from '@mpxjs/core'
+    import apiProxy from '@mpxjs/api-proxy'
 
-  mpx.use(apiProxy, { usePromise: true })
-  // app.js
-  createApp({
-    onLaunch () {
-    }
-  })
+    mpx.use(apiProxy, {usePromise: true});
+    // app.js
+    createApp({
+        globalData: {
+            userInfo: null
+        },
+        require: function ($uri) {
+            return require($uri)
+        },
+        onLaunch() {
+            // 展示本地存储能力
+            const logs = wx.getStorageSync('logs') || [];
+            logs.unshift(Date.now());
+            wx.setStorageSync('logs', logs);
+
+            // 登录
+            wx.login({
+                success: res => {
+                    // 发送 res.code 到后台换取 openId, sessionKey, unionId
+                }
+            });
+            // 获取用户信息
+            wx.getSetting({
+                success: res => {
+                    if (res.authSetting['scope.userInfo']) {
+                        // 已经授权，可以直接调用 getUserInfo 获取头像昵称，不会弹框
+                        wx.getUserInfo({
+                            success: res => {
+                                // 可以将 res 发送给后台解码出 unionId
+                                this.globalData.userInfo = res.userInfo;
+
+                                // 由于 getUserInfo 是网络请求，可能会在 Page.onLoad 之后才返回
+                                // 所以此处加入 callback 以防止这种情况
+                                if (this.userInfoReadyCallback) {
+                                    this.userInfoReadyCallback(res)
+                                }
+                            }
+                        })
+                    }
+                }
+            })
+        }
+    })
 </script>
 
 <style>
+    view {
+        color: #3a3636;
+        box-sizing: border-box;
+    }
 
+    page {
+        height: 100%;
+    }
+
+    .container {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: start;
+    }
 </style>
 
 <script type="application/json">
-  {
-    "pages": [
-      "./pages/index"
-    ]
-  }
+    {
+        "pages": [
+            "./pages/charts/index",
+            "./pages/index"
+        ],
+        "tabBar": {
+            "list": [
+                {
+                    "pagePath": "pages/index",
+                    "text": "首页"
+                },
+                {
+                    "pagePath": "pages/charts/index",
+                    "text": "Charts"
+                }
+            ]
+        },
+        "window": {
+            "backgroundTextStyle": "light",
+            "navigationBarBackgroundColor": "#fff",
+            "navigationBarTitleText": "HbCharts",
+            "navigationBarTextStyle": "black"
+        },
+        "style": "v2",
+        "useExtendedLib": {
+            "kbone": true,
+            "weui": true
+        }
+    }
 </script>
 
 <!--也可以通过以下形式用js输出json，便于书写注释和使用条件编译-->
-
 <!--<script name="json">-->
 <!--  // 可以写注释，通过defs注入的常量做一些判断之类的操作-->
 <!--  module.exports = {-->

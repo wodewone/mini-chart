@@ -1,0 +1,255 @@
+<template>
+    <view class="container">
+        <view class="toolbar">
+            <picker class="select" bindchange="changeChartType" value="{{chartTypeIndex}}" range="{{chartTypeList}}"
+                    range-key="name">
+                <view>
+                    数据类型：
+                    <view class="select-value">{{ chartTypeList[chartTypeIndex].name }}</view>
+                </view>
+            </picker>
+            <picker class="select" bindchange="changeChartLimit" value="{{chartLimitIndex}}" range="{{chartLimitList}}"
+                    range-key="name">
+                <view>
+                    数据量：
+                    <view class="select-value">{{ chartLimitList[chartLimitIndex].name }}</view>
+                </view>
+            </picker>
+        </view>
+        <view class="chart">
+            <f2 class="f2-chart" onInit="{{initChart}}"/>
+            <mp-loading wx:if="{{loading}}" type="circle" class="chart-loading"/>
+        </view>
+    </view>
+</template>
+
+<script>
+    import numeral from 'numeral';
+    import {http} from '@/lib/api.rest'
+    import {createPage} from '@mpxjs/core';
+
+    createPage({
+        data: {
+            initChart(F2, config) {
+                return new F2.Chart(config);
+            },
+            loading: false,
+            chartTypeIndex: 0,
+            chartLimitIndex: 1,
+            chartTypeList: [
+                {
+                    name: '交易额',
+                    value: 'volume',
+                },
+                {
+                    name: '恐慌指数',
+                    value: 'fear',
+                },
+                {
+                    name: 'USDT',
+                    value: 'otc'
+                },
+                {
+                    name: '成交额+恐慌指数',
+                    value: 'market'
+                }
+            ],
+            chartLimitList: [
+                {
+                    name: '周',
+                    value: 7,
+                },
+                {
+                    name: '月',
+                    value: 30,
+                },
+                {
+                    name: '季度',
+                    value: 90,
+                },
+                {
+                    name: '半年',
+                    value: 180,
+                },
+                {
+                    name: '年',
+                    value: 365,
+                },
+            ],
+        },
+        computed: {},
+        methods: {
+            async fetchChartData(type, limit = 100) {
+                this.setData({loading: true});
+                const data = await http.get('/v1/hb/' + type, {limit, chart: 1});
+                this.setData({loading: false});
+                return data;
+            },
+            async changeChart() {
+                const type = this.getChartType();
+                const limit = this.getChartLimit();
+                const _d = await this.fetchChartData(type, limit);
+                if (!this.chart) {
+                    const {chart} = this.selectComponent('.f2-chart');
+                    this.chart = chart;
+                }
+                this.chart.clear();
+                if (type === 'market') {
+                    let data = [];
+                    _d.forEach((item, index) => {
+                        const _i = index - _d.length / 2;
+                        if (item.type === 'Vol')
+                            data.push(item);
+                        else
+                            data[_i].fear = item.data;
+                    });
+                    this.renderMarketChart(this.chart, data);
+                } else {
+                    this.renderChart(this.chart, _d);
+                }
+            },
+            getChartType() {
+                const {chartTypeList = {}, chartTypeIndex = 0} = this.data || {};
+                return chartTypeList[chartTypeIndex].value || 'volume';
+            },
+            getChartLimit() {
+                const {chartLimitList = {}, chartLimitIndex = 0} = this.data || {};
+                return chartLimitList[chartLimitIndex].value || 10;
+            },
+            async changeChartType({detail: {value}}) {
+                this.setData({chartTypeIndex: value});
+                await this.changeChart();
+            },
+            async changeChartLimit({detail: {value}}) {
+                this.setData({chartLimitIndex: value});
+                await this.changeChart();
+            },
+            renderChart(chart, data) {
+                chart.source(data, {
+                    date: {
+                        range: [0, 1],
+                        type: 'timeCat',
+                        mask: 'MM-DD'
+                    },
+                    data: {
+                        type: 'linear',
+                        formatter(value) {
+                            return numeral(value).format('0.00 a');
+                        },
+                    }
+                });
+                chart.axis('date', {
+                    label(text, index, total) {
+                        return index === 0 ? {
+                            textAlign: 'left'
+                        } : index === total - 1 ? {
+                            textAlign: 'right'
+                        } : {};
+                    }
+                });
+                chart.legend();
+                chart.tooltip({
+                    showCrosshairs: true
+                });
+                chart.line().position('date*data').color('type');
+                chart.render();
+            },
+            async renderMarketChart(chart, data) {
+                chart.source(data, {
+                    data: {
+                        tickCount: 7,
+                        formatter: function formatter(value) {
+                            return numeral(value).format('0.00 a');
+                        }
+                    },
+                    fear: {
+                        ticks: [0, 15, 30, 45, 60, 75, 90],
+                    },
+                    date: {
+                        type: 'timeCat',
+                        range: [0, 1],
+                    },
+                });
+                chart.axis('fear', {
+                    grid: null
+                });
+                chart.interval().position('date*data').color('#4b9cfa');
+                chart.line().position('date*fear').color('#facc14');
+                chart.point().position('date*fear').size(2).color('#fab31e');
+                chart.interaction('pan');
+                // chart.scrollBar();
+                chart.render();
+            }
+        },
+        async onLoad() {
+            this.changeChart();
+        },
+        async onShow() {
+        }
+    });
+</script>
+
+<script type="application/json">
+    {
+        "usingComponents": {
+            "f2": "@antv/wx-f2",
+            "mp-loading": "weui-miniprogram/loading/loading"
+        },
+        "navigationBarTitleText": "hb Chart"
+    }
+</script>
+
+<style lang="scss">
+    .toolbar {
+        width: 100%;
+        height: 40px;
+        line-height: 40px;
+        padding: 0 10px;
+        display: flex;
+        font-size: 12px;
+        border-bottom: 1px dashed #9edd45;
+    }
+
+    .chart {
+        flex: 1;
+        width: 100%;
+        position: relative;
+    }
+
+    .f2-chart {
+        width: 100%;
+        height: 100%;
+    }
+
+    .chart-loading {
+        top: 0;
+        left: 0;
+        z-index: 10;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        position: absolute;
+        align-content: center;
+        justify-content: center;
+        background: rgba(167, 167, 167, 0.28);
+    }
+
+    .select {
+        flex: auto;
+    }
+
+    .select-value {
+        display: inline;
+        position: relative;
+        padding-right: 15px;
+        &:after {
+            content: '';
+            right: 0;
+            top: 50%;
+            position: absolute;
+            transform: translateY(-30%);
+            border: 4px solid transparent;
+            border-top-color: #999;
+        }
+    }
+</style>
