@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "f2": "@antv/wx-f2",
+    "mp-loading": "weui-miniprogram/loading/loading"
+  },
+  "navigationBarTitleText": "UI组件库"
+}

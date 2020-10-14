@@ -1,0 +1,21 @@
+<view class="container">
+  <view class="toolbar">
+    <picker class="select" bindchange="changeChartType" value="{{chartTypeIndex}}" range="{{chartTypeList}}"
+            range-key="name">
+      <view>
+        数据类型：
+        <view class="select-value">{{ chartTypeList[chartTypeIndex].name }}</view>
+      </view>
+    </picker>
+    <picker class="select" bindchange="changeChartLimit" value="{{chartLimitIndex}}" range="{{chartLimitList}}" range-key="name">
+      <view>
+        数据量：
+        <view class="select-value">{{ chartLimitList[chartLimitIndex].name }}</view>
+      </view>
+    </picker>
+  </view>
+  <view class="chart">
+    <f2 class="f2-chart" onInit="{{initF2Chart}}"/>
+    <mp-loading wx:if="{{loading}}" type="circle" class="chart-loading"/>
+  </view>
+</view>

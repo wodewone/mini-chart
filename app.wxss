@@ -1,0 +1,19 @@
+/**app.wxss**/
+/* @import '/miniprogram_npm/weui-miniprogram/weui-wxss/dist/style/weui.wxss'; */
+
+view {
+  color: #3a3636;
+  box-sizing: border-box;
+}
+
+page {
+  height: 100%;
+}
+
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+}
