@@ -71,6 +71,7 @@
     {
         "pages": [
             "./pages/charts/index",
+            "./pages/market/index",
             "./pages/index"
         ],
         "tabBar": {
@@ -82,6 +83,10 @@
                 {
                     "pagePath": "pages/charts/index",
                     "text": "Charts"
+                },
+                {
+                    "pagePath": "pages/market/index",
+                    "text": "Markets"
                 }
             ]
         },

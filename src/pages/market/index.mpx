@@ -1,0 +1,194 @@
+<template>
+    <view class="container">
+        <view class="toolbar">
+            <picker class="select" bindchange="changeChartLimit" value="{{chartLimitIndex}}" range="{{chartLimitList}}"
+                    range-key="name">
+                <view>
+                    数据量：
+                    <view class="select-value">{{ chartLimitList[chartLimitIndex].name }}</view>
+                </view>
+            </picker>
+        </view>
+        <view class="chart">
+            <f2 class="f2-chart" onInit="{{initChart}}"/>
+            <mp-loading wx:if="{{loading}}" type="circle" class="chart-loading"/>
+        </view>
+    </view>
+</template>
+
+<script>
+    import numeral from 'numeral';
+    import {http} from '@/lib/api.rest';
+    import pan from '@antv/f2/lib/interaction/pan';
+    import pinch from '@antv/f2/lib/interaction/pinch';
+    import {createPage} from '@mpxjs/core';
+
+    createPage({
+        data: {
+            initChart(F2, config) {
+                // F2.Chart.plugins.register([ScrollBar]);
+                // return new F2.Chart(config);
+                const chart = new F2.Chart(config);
+                const data = [];
+                chart.source(data, {
+                    data: {
+                        tickCount: 7,
+                        formatter(value) {
+                            return numeral(value).format('0.00 a');
+                        }
+                    },
+                    fear: {
+                        ticks: [0, 15, 30, 45, 60, 75, 90],
+                    },
+                    date: {
+                        type: 'timeCat',
+                        mask: 'MM-DD',
+                        range: [0, 1],
+                    },
+                });
+                chart.axis('fear', {
+                    grid: null
+                });
+                chart.interval().position('date*fear').color('#facc14');
+                chart.line().position('date*data').color('#4b9cfa');
+
+                chart.interaction('pan');
+                chart.interaction('pinch');
+                chart.render();
+                return chart;
+            },
+            loading: false,
+            chartLimitIndex: 2,
+            chartLimitList: [
+                {
+                    name: '周',
+                    value: 7,
+                },
+                {
+                    name: '月',
+                    value: 30,
+                },
+                {
+                    name: '季度',
+                    value: 90,
+                },
+                {
+                    name: '半年',
+                    value: 180,
+                },
+                {
+                    name: '年',
+                    value: 365,
+                },
+            ],
+        },
+        methods: {
+            async fetchChartData(type, limit = 100) {
+                this.setData({loading: true});
+                const data = await http.get('/v1/hb/' + type, {limit, chart: 1});
+                this.setData({loading: false});
+                data.forEach(item => {
+                    item.time = +new Date(item.date);
+                });
+                return data;
+            },
+            async changeChart() {
+                const limit = this.getChartLimit();
+                const _d = await this.fetchChartData('market', limit);
+                if (!this.chart) {
+                    const {chart} = this.selectComponent('.f2-chart');
+                    this.chart = chart;
+                }
+                let data = [];
+                _d.forEach((item, index) => {
+                    const _i = index - _d.length / 2;
+                    if (item.type === 'Vol')
+                        data.push(item);
+                    else
+                        data[_i].fear = item.data;
+                });
+                this.renderMarketChart(this.chart, data);
+            },
+            getChartLimit() {
+                const {chartLimitList = {}, chartLimitIndex = 0} = this.data || {};
+                return chartLimitList[chartLimitIndex].value || 10;
+            },
+            async changeChartLimit({detail: {value}}) {
+                this.setData({chartLimitIndex: value});
+                await this.changeChart();
+            },
+            async renderMarketChart(chart, data) {
+                this.chart.changeData(data);
+            }
+        },
+        async onLoad() {
+            this.changeChart();
+        },
+    });
+</script>
+
+<style lang="scss">
+    .toolbar {
+        width: 100%;
+        height: 40px;
+        line-height: 40px;
+        padding: 0 10px;
+        display: flex;
+        font-size: 12px;
+        border-bottom: 1px dashed #9edd45;
+    }
+
+    .chart {
+        flex: 1;
+        width: 100%;
+        position: relative;
+    }
+
+    .f2-chart {
+        width: 100%;
+        height: 100%;
+    }
+
+    .chart-loading {
+        top: 0;
+        left: 0;
+        z-index: 10;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        position: absolute;
+        align-content: center;
+        justify-content: center;
+        background: rgba(167, 167, 167, 0.28);
+    }
+
+    .select {
+        flex: auto;
+    }
+
+    .select-value {
+        display: inline;
+        position: relative;
+        padding-right: 15px;
+
+        &:after {
+            content: '';
+            right: 0;
+            top: 50%;
+            position: absolute;
+            transform: translateY(-30%);
+            border: 4px solid transparent;
+            border-top-color: #999;
+        }
+    }
+</style>
+
+<script type="application/json">
+    {
+        "usingComponents": {
+            "f2": "@antv/wx-f2",
+            "mp-loading": "weui-miniprogram/loading/loading"
+        },
+        "navigationBarTitleText": "hb Market"
+    }
+</script>
