@@ -94,7 +94,8 @@
             "backgroundTextStyle": "light",
             "navigationBarBackgroundColor": "#fff",
             "navigationBarTitleText": "HbCharts",
-            "navigationBarTextStyle": "black"
+            "navigationBarTextStyle": "black",
+            "pageOrientation": "auto"
         },
         "style": "v2",
         "useExtendedLib": {

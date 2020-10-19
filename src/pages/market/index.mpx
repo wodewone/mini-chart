@@ -9,7 +9,7 @@
                 </view>
             </picker>
         </view>
-        <view class="chart">
+        <view class="chart" wx:ref="chartBox">
             <f2 class="f2-chart" onInit="{{initChart}}"/>
             <mp-loading wx:if="{{loading}}" type="circle" class="chart-loading"/>
         </view>
@@ -17,81 +17,14 @@
 </template>
 
 <script>
-    import numeral from 'numeral';
-    import {http} from '@/lib/api.rest';
-    import pan from '@antv/f2/lib/interaction/pan';
-    import pinch from '@antv/f2/lib/interaction/pinch';
+    import mixin from "@/mixins/chart.mixin";
     import {createPage} from '@mpxjs/core';
-
     createPage({
+        mixins: [mixin],
         data: {
-            initChart(F2, config) {
-                // F2.Chart.plugins.register([ScrollBar]);
-                // return new F2.Chart(config);
-                const chart = new F2.Chart(config);
-                const data = [];
-                chart.source(data, {
-                    data: {
-                        tickCount: 7,
-                        formatter(value) {
-                            return numeral(value).format('0.00 a');
-                        }
-                    },
-                    fear: {
-                        ticks: [0, 15, 30, 45, 60, 75, 90],
-                    },
-                    date: {
-                        type: 'timeCat',
-                        mask: 'MM-DD',
-                        range: [0, 1],
-                    },
-                });
-                chart.axis('fear', {
-                    grid: null
-                });
-                chart.interval().position('date*fear').color('#facc14');
-                chart.line().position('date*data').color('#4b9cfa');
-
-                chart.interaction('pan');
-                chart.interaction('pinch');
-                chart.render();
-                return chart;
-            },
-            loading: false,
-            chartLimitIndex: 2,
-            chartLimitList: [
-                {
-                    name: '周',
-                    value: 7,
-                },
-                {
-                    name: '月',
-                    value: 30,
-                },
-                {
-                    name: '季度',
-                    value: 90,
-                },
-                {
-                    name: '半年',
-                    value: 180,
-                },
-                {
-                    name: '年',
-                    value: 365,
-                },
-            ],
+            chartLimitIndex: 4,
         },
         methods: {
-            async fetchChartData(type, limit = 100) {
-                this.setData({loading: true});
-                const data = await http.get('/v1/hb/' + type, {limit, chart: 1});
-                this.setData({loading: false});
-                data.forEach(item => {
-                    item.time = +new Date(item.date);
-                });
-                return data;
-            },
             async changeChart() {
                 const limit = this.getChartLimit();
                 const _d = await this.fetchChartData('market', limit);
@@ -109,21 +42,10 @@
                 });
                 this.renderMarketChart(this.chart, data);
             },
-            getChartLimit() {
-                const {chartLimitList = {}, chartLimitIndex = 0} = this.data || {};
-                return chartLimitList[chartLimitIndex].value || 10;
-            },
-            async changeChartLimit({detail: {value}}) {
-                this.setData({chartLimitIndex: value});
-                await this.changeChart();
-            },
-            async renderMarketChart(chart, data) {
-                this.chart.changeData(data);
-            }
         },
         async onLoad() {
             this.changeChart();
-        },
+        }
     });
 </script>
 
@@ -189,6 +111,7 @@
             "f2": "@antv/wx-f2",
             "mp-loading": "weui-miniprogram/loading/loading"
         },
+        "pageOrientation": "landscape",
         "navigationBarTitleText": "hb Market"
     }
 </script>
