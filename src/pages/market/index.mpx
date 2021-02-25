@@ -111,7 +111,6 @@
             "f2": "@antv/wx-f2",
             "mp-loading": "weui-miniprogram/loading/loading"
         },
-        "pageOrientation": "landscape",
         "navigationBarTitleText": "hb Market"
     }
 </script>

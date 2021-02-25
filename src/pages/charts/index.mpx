@@ -24,158 +24,172 @@
 </template>
 
 <script>
-    import numeral from 'numeral';
-    import pan from '@antv/f2/lib/interaction/pan';
-    import pinch from '@antv/f2/lib/interaction/pinch';
-    import mixin from '@/mixins/chart.mixin';
+import numeral from 'numeral'
+import pan from '@antv/f2/lib/interaction/pan'
+import pinch from '@antv/f2/lib/interaction/pinch'
+import mixin from '@/mixins/chart.mixin'
 
-    // TODO: F2@3.6.* changeData 有问题
-    // TODO: F2@3.7.* pan 报错（hammerjs 依赖问题 小程序没有 document 对象）
+// TODO: F2@3.6.* changeData 有问题
+// TODO: F2@3.7.* pan 报错（hammerjs 依赖问题 小程序没有 document 对象）
 
-    import {createPage} from '@mpxjs/core';
-    createPage({
-        mixins: [mixin],
-        computed: {},
-        methods: {
-            async changeChart() {
-                const type = this.getChartType();
-                const limit = this.getChartLimit();
-                const _d = await this.fetchChartData(type, limit);
-                if (!this.chart) {
-                    const {chart} = this.selectComponent('.f2-chart');
-                    this.chart = chart;
-                }
-                const {chart} = this;
-                chart.clear && chart.clear();
-                if (type === 'market') {
-                    let data = [];
-                    _d.forEach((item, index) => {
-                        const _i = index - _d.length / 2;
-                        if (item.type === 'Vol')
-                            data.push(item);
-                        else
-                            data[_i].fear = item.data;
-                    });
-                    // chart.changeData(data);
-                    this.renderMarketChart(chart, data);
-                } else {
-                    this.renderChart(chart, _d);
-                }
-            },
-            renderChart(chart, data) {
-                chart.source(data, {
-                    date: {
-                        type: 'timeCat',
-                        mask: 'MM-DD',
-                    },
-                    data: {
-                        formatter(value) {
-                            return numeral(value).format('0.00 a');
-                        },
+import { createPage } from '@mpxjs/core'
+
+createPage({
+    mixins: [mixin],
+    computed: {},
+    data: {
+        chart: null
+    },
+    methods: {
+        async changeChart () {
+            const type = this.getChartType()
+            const limit = this.getChartLimit()
+            const _d = await this.fetchChartData(type, limit)
+            if (!this.chart) {
+                const { chart } = this.selectComponent('.f2-chart')
+                this.chart = chart
+            }
+            const { chart } = this
+            chart.clear && chart.clear()
+            if (type === 'market') {
+                let data = []
+                _d.forEach((item, index) => {
+                    const _i = index - _d.length / 2
+                    if (item.type === 'Vol') {
+                        data.push(item)
+                    } else {
+                        data[_i].fear = item.data
                     }
-                });
-                // chart.axis('date', {
-                //     label(text, index, total) {
-                //         return index === 0 ? {
-                //             textAlign: 'left'
-                //         } : index === total - 1 ? {
-                //             textAlign: 'right'
-                //         } : {};
-                //     }
-                // });
-                chart.legend();
-                chart.tooltip({
-                    showCrosshairs: true,
-                    showItemMarker: false,
-                    background: {
-                        radius: 2,
-                        fill: '#1890FF',
-                        padding: [3, 5]
-                    },
-                    nameStyle: {
-                        fill: '#fff'
-                    },
-                    onShow({items}) {
-                        items[0].name = items[0].title;
+                })
+                // chart.changeData(data);
+                this.renderMarketChart(chart, data)
+            } else {
+                this.renderChart(chart, _d)
+            }
+        },
+        renderChart (chart, data) {
+            chart.source(data, {
+                date: {
+                    type: 'timeCat',
+                    mask: 'MM-DD'
+                },
+                data: {
+                    formatter (value) {
+                        return numeral(value).format('0.00 a')
                     }
-                });
-                chart.line().position('date*data').color('type');
-                chart.interaction('pan');
-                chart.interaction('pinch');
-                chart.render();
-            },
-        },
-        async onLoad() {
-            this.changeChart();
-        },
-        async onShow() {
+                }
+            })
+            // chart.axis('date', {
+            //     label(text, index, total) {
+            //         return index === 0 ? {
+            //             textAlign: 'left'
+            //         } : index === total - 1 ? {
+            //             textAlign: 'right'
+            //         } : {};
+            //     }
+            // });
+            chart.legend()
+            chart.tooltip({
+                showCrosshairs: true,
+                showItemMarker: false,
+                background: {
+                    radius: 2,
+                    fill: '#1890FF',
+                    padding: [3, 5]
+                },
+                nameStyle: {
+                    fill: '#fff'
+                },
+                onShow ({ items }) {
+                    items[0].name = items[0].title
+                }
+            })
+            chart.line().position('date*data').color('type')
+            chart.interaction('pan')
+            chart.interaction('pinch')
+            chart.render()
         }
-    });
+    },
+    onResize () {
+        wx.createSelectorQuery().selectAll('.f2-chart').boundingClientRect(([{ height, width }]) => {
+            if (this.chart) {
+                // this.chart.clear()
+                const pix = wx.getSystemInfoSync().pixelRatio
+                this.chart.changeSize(width * pix, height * pix)
+                // this.chart.render()
+            }
+        }).exec()
+    },
+    async onLoad () {
+        this.changeChart()
+    },
+    async onShow () {
+    }
+})
 </script>
 
 <style lang="scss">
-    .toolbar {
-        width: 100%;
-        height: 40px;
-        line-height: 40px;
-        padding: 0 10px;
-        display: flex;
-        font-size: 12px;
-        border-bottom: 1px dashed #9edd45;
-    }
+.toolbar {
+    width: 100%;
+    height: 40px;
+    line-height: 40px;
+    padding: 0 10px;
+    display: flex;
+    font-size: 12px;
+    border-bottom: 1px dashed #9edd45;
+}
 
-    .chart {
-        flex: 1;
-        width: 100%;
-        position: relative;
-    }
+.chart {
+    flex: 1;
+    width: 100%;
+    position: relative;
+}
 
-    .f2-chart {
-        width: 100%;
-        height: 100%;
-    }
+.f2-chart {
+    width: 100%;
+    height: 100%;
+}
 
-    .chart-loading {
-        top: 0;
-        left: 0;
-        z-index: 10;
-        width: 100%;
-        height: 100%;
-        display: flex;
+.chart-loading {
+    top: 0;
+    left: 0;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    position: absolute;
+    align-content: center;
+    justify-content: center;
+    background: rgba(167, 167, 167, 0.28);
+}
+
+.select {
+    flex: auto;
+}
+
+.select-value {
+    display: inline;
+    position: relative;
+    padding-right: 15px;
+
+    &:after {
+        content: '';
+        right: 0;
+        top: 50%;
         position: absolute;
-        align-content: center;
-        justify-content: center;
-        background: rgba(167, 167, 167, 0.28);
+        transform: translateY(-30%);
+        border: 4px solid transparent;
+        border-top-color: #999;
     }
-
-    .select {
-        flex: auto;
-    }
-
-    .select-value {
-        display: inline;
-        position: relative;
-        padding-right: 15px;
-
-        &:after {
-            content: '';
-            right: 0;
-            top: 50%;
-            position: absolute;
-            transform: translateY(-30%);
-            border: 4px solid transparent;
-            border-top-color: #999;
-        }
-    }
+}
 </style>
 
 <script type="application/json">
-    {
-        "usingComponents": {
-            "f2": "@antv/wx-f2",
-            "mp-loading": "weui-miniprogram/loading/loading"
-        },
-        "pageOrientation": "landscape",
-        "navigationBarTitleText": "hb Chart"
-    }
+{
+    "usingComponents": {
+        "f2": "@antv/wx-f2",
+        "mp-loading": "weui-miniprogram/loading/loading"
+    },
+    "navigationBarTitleText": "hb Chart"
+}
 </script>
